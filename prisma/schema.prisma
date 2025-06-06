@@ -1,0 +1,332 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum untuk role pengguna
+enum UserRole {
+  TEACHER
+  STUDENT
+}
+
+// Enum untuk status verifikasi
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// Enum untuk status pembayaran
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+// Enum untuk tipe pembayaran
+enum PaymentType {
+  MATERIAL
+  LESSON_SESSION
+}
+
+// Enum untuk status notifikasi
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
+// Model utama untuk pengguna (guru dan siswa)
+model User {
+  id                  String             @id @default(cuid())
+  email               String             @unique
+  password            String
+  full_name           String
+  role                UserRole
+  profile_picture     String?
+  phone               String?
+  is_email_verified   Boolean            @default(false)
+  verification_status VerificationStatus @default(PENDING)
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+
+  // Relasi untuk OTP verifikasi email
+  otp_codes OtpCode[]
+
+  // Relasi khusus untuk guru
+  teacher_profile  TeacherProfile?
+  materials        Material[]
+  received_reviews Review[]        @relation("TeacherReviews")
+  teacher_chats    Chat[]          @relation("TeacherChats")
+  created_quizzes  Quiz[]
+
+  // Relasi khusus untuk siswa
+  student_profile StudentProfile?
+  given_reviews   Review[]        @relation("StudentReviews")
+  student_chats   Chat[]          @relation("StudentChats")
+  payments        Payment[]
+  quiz_attempts   QuizAttempt[]
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+// Model untuk kode OTP verifikasi email
+model OtpCode {
+  id         String   @id @default(cuid())
+  user_id    String
+  code       String
+  expires_at DateTime
+  is_used    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  // Relasi ke user
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("otp-codes")
+}
+
+// Model profil khusus guru
+model TeacherProfile {
+  id            String   @id @default(cuid())
+  user_id       String   @unique
+  bio           String?
+  experience    Int? // pengalaman dalam tahun
+  education     String?
+  subjects      String[] // mata pelajaran yang diajar
+  rating        Float    @default(0)
+  total_reviews Int      @default(0)
+  total_courses Int      @default(0) // total course yang dibuat
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relasi ke user
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("teacher-profiles")
+}
+
+// Model profil khusus siswa
+model StudentProfile {
+  id         String   @id @default(cuid())
+  user_id    String   @unique
+  grade      String? // kelas/tingkatan
+  school     String?
+  interests  String[] // minat belajar
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relasi ke user
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("student-profiles")
+}
+
+// Model untuk kategori materi pembelajaran
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relasi ke materi
+  materials Material[]
+
+  @@map("categories")
+}
+
+// Model untuk materi pembelajaran (course)
+model Material {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  content     String // konten materi
+  price       Int // harga course dalam rupiah
+  category_id String
+  teacher_id  String
+  thumbnail   String? // gambar thumbnail
+  file_url    String? // file attachment
+  duration    Int? // durasi course dalam menit
+  level       String? // beginner, intermediate, advanced
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relasi ke kategori dan guru
+  category Category @relation(fields: [category_id], references: [id])
+  teacher  User     @relation(fields: [teacher_id], references: [id])
+
+  // Relasi ke pembayaran dan quiz
+  payments Payment[]
+  quizzes  Quiz[]
+
+  @@map("materials")
+}
+
+// Model untuk live chat real-time
+model Chat {
+  id         String   @id @default(cuid())
+  message    String
+  teacher_id String
+  student_id String
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  // Relasi ke guru dan siswa
+  teacher User @relation("TeacherChats", fields: [teacher_id], references: [id])
+  student User @relation("StudentChats", fields: [student_id], references: [id])
+
+  @@map("chats")
+}
+
+// Model untuk sistem notifikasi
+model Notification {
+  id         String             @id @default(cuid())
+  user_id    String
+  title      String
+  message    String
+  type       String // PROMO, UPDATE, PAYMENT, dll
+  status     NotificationStatus @default(UNREAD)
+  created_at DateTime           @default(now())
+
+  // Relasi ke user
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// Model untuk pembayaran via Midtrans
+model Payment {
+  id              String        @id @default(cuid())
+  user_id         String
+  material_id     String?
+  amount          Int // jumlah pembayaran dalam rupiah
+  type            PaymentType
+  status          PaymentStatus @default(PENDING)
+  midtrans_id     String? // transaction ID dari Midtrans
+  midtrans_status String?
+  payment_method  String?
+  paid_at         DateTime?
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  // Relasi ke user dan materi
+  user     User      @relation(fields: [user_id], references: [id])
+  material Material? @relation(fields: [material_id], references: [id])
+
+  @@map("payments")
+}
+
+// Model untuk review dan rating
+model Review {
+  id         String   @id @default(cuid())
+  teacher_id String
+  student_id String
+  rating     Int // rating 1-5
+  comment    String?
+  created_at DateTime @default(now())
+
+  // Relasi ke guru dan siswa
+  teacher User @relation("TeacherReviews", fields: [teacher_id], references: [id])
+  student User @relation("StudentReviews", fields: [student_id], references: [id])
+
+  // Satu siswa hanya bisa review satu guru sekali
+  @@unique([teacher_id, student_id])
+  @@map("reviews")
+}
+
+// Model untuk quiz interaktif
+model Quiz {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  material_id     String
+  teacher_id      String
+  time_limit      Int? // batas waktu dalam menit
+  total_questions Int      @default(0)
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relasi ke materi dan guru
+  material Material @relation(fields: [material_id], references: [id])
+  teacher  User     @relation(fields: [teacher_id], references: [id])
+
+  // Relasi ke pertanyaan dan percobaan
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+// Model untuk pertanyaan dalam quiz
+model QuizQuestion {
+  id             String   @id @default(cuid())
+  quiz_id        String
+  question       String
+  option_a       String
+  option_b       String
+  option_c       String
+  option_d       String
+  correct_answer String // A, B, C, atau D
+  explanation    String? // penjelasan jawaban yang benar
+  created_at     DateTime @default(now())
+
+  // Relasi ke quiz
+  quiz Quiz @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+
+  // Relasi ke jawaban percobaan
+  answers QuizAttemptAnswer[]
+
+  @@map("quiz-questions")
+}
+
+// Model untuk percobaan mengerjakan quiz
+model QuizAttempt {
+  id              String    @id @default(cuid())
+  quiz_id         String
+  user_id         String
+  score           Int       @default(0)
+  total_questions Int       @default(0)
+  correct_answers Int       @default(0)
+  started_at      DateTime  @default(now())
+  completed_at    DateTime?
+
+  // Relasi ke quiz dan user
+  quiz Quiz @relation(fields: [quiz_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
+
+  // Relasi ke jawaban
+  answers QuizAttemptAnswer[]
+
+  @@map("quiz-attempts")
+}
+
+// Model untuk jawaban dalam setiap percobaan quiz
+model QuizAttemptAnswer {
+  id          String  @id @default(cuid())
+  attempt_id  String
+  question_id String
+  user_answer String // A, B, C, atau D
+  is_correct  Boolean
+
+  // Relasi ke percobaan dan pertanyaan
+  attempt  QuizAttempt  @relation(fields: [attempt_id], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [question_id], references: [id])
+
+  // Satu pertanyaan per percobaan hanya bisa dijawab sekali
+  @@unique([attempt_id, question_id])
+  @@map("quiz-attempt-answers")
+}
