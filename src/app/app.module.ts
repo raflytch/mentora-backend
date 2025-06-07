@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from './core/config/config.module';
 import { PrismaModule } from './core/prisma/prisma.module';
+import { CloudinaryModule } from './core/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PrismaModule } from './core/prisma/prisma.module';
     }),
     ConfigModule,
     PrismaModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

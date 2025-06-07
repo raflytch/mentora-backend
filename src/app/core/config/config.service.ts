@@ -1,13 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 
-interface EmailConfig {
-  host: string | undefined;
-  port: number | undefined;
-  user: string | undefined;
-  pass: string | undefined;
-}
-
 @Injectable()
 export class ConfigService {
   constructor(private readonly nestConfigService: NestConfigService) {}
@@ -36,12 +29,15 @@ export class ConfigService {
     return this.nestConfigService.get<string>('JWT_SECRET') || 'default-secret';
   }
 
-  get emailConfig(): EmailConfig {
-    return {
-      host: this.nestConfigService.get<string>('EMAIL_HOST'),
-      port: this.nestConfigService.get<number>('EMAIL_PORT'),
-      user: this.nestConfigService.get<string>('EMAIL_USER'),
-      pass: this.nestConfigService.get<string>('EMAIL_PASS'),
-    };
+  get cloudinaryCloudName(): string {
+    return this.nestConfigService.get<string>('CLOUDINARY_CLOUD_NAME') || '';
+  }
+
+  get cloudinaryApiKey(): string {
+    return this.nestConfigService.get<string>('CLOUDINARY_API_KEY') || '';
+  }
+
+  get cloudinaryApiSecret(): string {
+    return this.nestConfigService.get<string>('CLOUDINARY_API_SECRET') || '';
   }
 }
