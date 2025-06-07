@@ -1,5 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { AppService } from './app.service';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 interface WelcomeResponse {
   message: string;
@@ -12,10 +14,14 @@ interface WelcomeResponse {
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: Logger,
+  ) {}
 
   @Get()
   getWelcome(): WelcomeResponse {
+    this.logger.log('GET / - Welcome endpoint called', 'AppController');
     return this.appService.getWelcome();
   }
 }

@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 interface WelcomeResponse {
   message: string;
@@ -11,7 +13,13 @@ interface WelcomeResponse {
 
 @Injectable()
 export class AppService {
+  constructor(
+    @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: Logger,
+  ) {}
+
   getWelcome(): WelcomeResponse {
+    this.logger.log('Welcome endpoint accessed', 'AppService');
+
     return {
       message: 'Welcome to Mentora Backend API',
       application: 'Mentora Learning Platform',

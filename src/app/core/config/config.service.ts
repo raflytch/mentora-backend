@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 
+interface EmailConfig {
+  host: string | undefined;
+  port: number | undefined;
+  user: string | undefined;
+  pass: string | undefined;
+}
+
 @Injectable()
 export class ConfigService {
   constructor(private readonly nestConfigService: NestConfigService) {}
@@ -25,18 +32,11 @@ export class ConfigService {
     return this.nodeEnv === 'development';
   }
 
-  get<T>(key: string, defaultValue?: T): T | undefined {
-    if (defaultValue !== undefined) {
-      return this.nestConfigService.get<T>(key, defaultValue);
-    }
-    return this.nestConfigService.get<T>(key);
-  }
-
   get jwtSecret(): string {
     return this.nestConfigService.get<string>('JWT_SECRET') || 'default-secret';
   }
 
-  get emailConfig() {
+  get emailConfig(): EmailConfig {
     return {
       host: this.nestConfigService.get<string>('EMAIL_HOST'),
       port: this.nestConfigService.get<number>('EMAIL_PORT'),
