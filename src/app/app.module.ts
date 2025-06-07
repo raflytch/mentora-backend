@@ -7,6 +7,8 @@ import { AppService } from './app.service';
 import { ConfigModule } from './core/config/config.module';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { CloudinaryModule } from './core/cloudinary/cloudinary.module';
+import { MailModule } from './core/mail/mail.module';
+import { UserModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { CloudinaryModule } from './core/cloudinary/cloudinary.module';
     ConfigModule,
     PrismaModule,
     CloudinaryModule,
+    MailModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],

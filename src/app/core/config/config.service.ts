@@ -3,41 +3,59 @@ import { ConfigService as NestConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ConfigService {
-  constructor(private readonly nestConfigService: NestConfigService) {}
-
-  get databaseUrl(): string {
-    return this.nestConfigService.get<string>('DATABASE_URL') || '';
-  }
+  constructor(private configService: NestConfigService) {}
 
   get port(): number {
-    return this.nestConfigService.get<number>('PORT') || 3000;
+    return this.configService.get<number>('PORT') || 3000;
   }
 
   get nodeEnv(): string {
-    return this.nestConfigService.get<string>('NODE_ENV') || 'development';
-  }
-
-  get isProduction(): boolean {
-    return this.nodeEnv === 'production';
-  }
-
-  get isDevelopment(): boolean {
-    return this.nodeEnv === 'development';
+    return this.configService.get<string>('NODE_ENV') || 'development';
   }
 
   get jwtSecret(): string {
-    return this.nestConfigService.get<string>('JWT_SECRET') || 'default-secret';
+    return this.configService.get<string>('JWT_SECRET') || 'secret';
+  }
+
+  get jwtExpiresIn(): string {
+    return this.configService.get<string>('JWT_EXPIRES_IN') || '7d';
+  }
+
+  get mailUser(): string {
+    return this.configService.get<string>('MAIL_USER') || '';
+  }
+
+  get mailPassword(): string {
+    return this.configService.get<string>('MAIL_PASSWORD') || '';
+  }
+
+  get googleClientId(): string {
+    return this.configService.get<string>('GOOGLE_CLIENT_ID') || '';
+  }
+
+  get googleClientSecret(): string {
+    return this.configService.get<string>('GOOGLE_CLIENT_SECRET') || '';
+  }
+
+  get googleCallbackUrl(): string {
+    return this.configService.get<string>('GOOGLE_CALLBACK_URL') || '';
   }
 
   get cloudinaryCloudName(): string {
-    return this.nestConfigService.get<string>('CLOUDINARY_CLOUD_NAME') || '';
+    return this.configService.get<string>('CLOUDINARY_CLOUD_NAME') || '';
   }
 
   get cloudinaryApiKey(): string {
-    return this.nestConfigService.get<string>('CLOUDINARY_API_KEY') || '';
+    return this.configService.get<string>('CLOUDINARY_API_KEY') || '';
   }
 
   get cloudinaryApiSecret(): string {
-    return this.nestConfigService.get<string>('CLOUDINARY_API_SECRET') || '';
+    return this.configService.get<string>('CLOUDINARY_API_SECRET') || '';
+  }
+
+  get frontendUrl(): string {
+    return (
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'
+    );
   }
 }

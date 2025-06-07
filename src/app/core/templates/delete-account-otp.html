@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account Deletion Verification - Mentora</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      }
+      .content {
+        background: #f9f9f9;
+        padding: 30px;
+        border-radius: 0 0 10px 10px;
+      }
+      .otp-code {
+        background: #ffe8e8;
+        border: 2px solid #ff6b6b;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        margin: 20px 0;
+      }
+      .code {
+        font-size: 32px;
+        font-weight: bold;
+        color: #ff6b6b;
+        letter-spacing: 5px;
+      }
+      .warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+        padding: 15px;
+        margin: 20px 0;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        color: #666;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Mentora Learning Platform</h1>
+      <p>Account Deletion Request</p>
+    </div>
+    <div class="content">
+      <h2>Hello {{name}},</h2>
+      <p>
+        We received a request to delete your Mentora account. If this was you,
+        please verify this action using the OTP code below:
+      </p>
+
+      <div class="otp-code">
+        <p>Your verification code is:</p>
+        <div class="code">{{otpCode}}</div>
+      </div>
+
+      <div class="warning">
+        <strong>⚠️ Warning:</strong> This action cannot be undone. Deleting your
+        account will permanently remove all your data, including courses,
+        progress, and chat history.
+      </div>
+
+      <p><strong>Important:</strong> This code will expire in 15 minutes.</p>
+      <p>
+        If you didn't request account deletion, please ignore this email and
+        consider changing your password.
+      </p>
+
+      <div class="footer">
+        <p>&copy; 2025 Mentora. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
