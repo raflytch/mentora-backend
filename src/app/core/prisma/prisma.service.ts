@@ -4,13 +4,16 @@ import {
   OnModuleInit,
   Inject,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
 @Injectable()
 export class PrismaService
-  extends PrismaClient
+  extends PrismaClient<
+    Prisma.PrismaClientOptions,
+    'query' | 'info' | 'warn' | 'error'
+  >
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(
@@ -29,7 +32,7 @@ export class PrismaService
   async onModuleInit(): Promise<void> {
     await this.$connect();
 
-    (this as any).$on('query', (e: any) => {
+    this.$on('query', (e) => {
       this.logger.debug(`Query: ${e.query}`, { context: 'PrismaService' });
       this.logger.debug(`Params: ${e.params}`, { context: 'PrismaService' });
       this.logger.debug(`Duration: ${e.duration}ms`, {
@@ -37,15 +40,15 @@ export class PrismaService
       });
     });
 
-    (this as any).$on('info', (e: any) => {
+    this.$on('info', (e) => {
       this.logger.info(e.message, { context: 'PrismaService' });
     });
 
-    (this as any).$on('warn', (e: any) => {
+    this.$on('warn', (e) => {
       this.logger.warn(e.message, { context: 'PrismaService' });
     });
 
-    (this as any).$on('error', (e: any) => {
+    this.$on('error', (e) => {
       this.logger.error(e.message, { context: 'PrismaService' });
     });
 
