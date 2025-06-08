@@ -4,10 +4,10 @@ import {
   OnModuleInit,
   Inject,
 } from '@nestjs/common';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { Prisma, PrismaClient } from '../../../../generated/prisma';
 
 @Injectable()
 export class PrismaService
