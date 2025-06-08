@@ -11,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  Request,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -46,9 +47,9 @@ export class CategoryController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.TEACHER)
-  async createCategory(@Body() dto: CreateCategoryDto) {
+  async createCategory(@Body() dto: CreateCategoryDto, @Request() req) {
     this.logger.info('Create category', { context: 'CategoryController' });
-    return this.categoryService.createCategory(dto);
+    return this.categoryService.createCategory(dto, req.user.id);
   }
 
   @Patch(':id')
@@ -58,21 +59,27 @@ export class CategoryController {
   async updateCategory(
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
+    @Request() req,
   ) {
     this.logger.info(`Update category: ${id}`, {
       context: 'CategoryController',
     });
-    return this.categoryService.updateCategory(id, dto);
+    return this.categoryService.updateCategory(
+      id,
+      dto,
+      req.user.id,
+      req.user.role,
+    );
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.TEACHER)
-  async deleteCategory(@Param('id') id: string) {
+  async deleteCategory(@Param('id') id: string, @Request() req) {
     this.logger.info(`Delete category: ${id}`, {
       context: 'CategoryController',
     });
-    return this.categoryService.deleteCategory(id);
+    return this.categoryService.deleteCategory(id, req.user.id, req.user.role);
   }
 }

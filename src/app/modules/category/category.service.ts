@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class CategoryService {
@@ -23,6 +29,13 @@ export class CategoryService {
         orderBy: { created_at: 'desc' },
         include: {
           materials: true,
+          created_by: {
+            select: {
+              id: true,
+              full_name: true,
+              role: true,
+            },
+          },
         },
       }),
       this.prisma.category.count(),
@@ -37,11 +50,12 @@ export class CategoryService {
     };
   }
 
-  async createCategory(dto: CreateCategoryDto) {
+  async createCategory(dto: CreateCategoryDto, userId: string) {
     const category = await this.prisma.category.create({
       data: {
         name: dto.name,
         description: dto.description,
+        created_by_id: userId,
       },
     });
     this.logger.info(`Category created: ${category.name}`, {
@@ -50,13 +64,34 @@ export class CategoryService {
     return category;
   }
 
-  async updateCategory(id: string, dto: UpdateCategoryDto) {
-    const category = await this.prisma.category.findUnique({ where: { id } });
+  async updateCategory(
+    id: string,
+    dto: UpdateCategoryDto,
+    userId: string,
+    userRole: UserRole,
+  ) {
+    const category = await this.prisma.category.findUnique({
+      where: { id },
+      include: {
+        created_by: true,
+      },
+    });
     if (!category) {
       this.logger.warn(`Category not found: ${id}`, {
         context: 'CategoryService',
       });
       throw new NotFoundException('Category not found');
+    }
+    if (userRole !== UserRole.ADMIN && category.created_by_id !== userId) {
+      this.logger.warn(
+        `User ${userId} trying to update category ${id} created by ${category.created_by_id}`,
+        {
+          context: 'CategoryService',
+        },
+      );
+      throw new ForbiddenException(
+        'You can only update categories you created',
+      );
     }
     const updated = await this.prisma.category.update({
       where: { id },
@@ -69,13 +104,29 @@ export class CategoryService {
     return updated;
   }
 
-  async deleteCategory(id: string) {
-    const category = await this.prisma.category.findUnique({ where: { id } });
+  async deleteCategory(id: string, userId: string, userRole: UserRole) {
+    const category = await this.prisma.category.findUnique({
+      where: { id },
+      include: {
+        created_by: true,
+      },
+    });
     if (!category) {
       this.logger.warn(`Category not found: ${id}`, {
         context: 'CategoryService',
       });
       throw new NotFoundException('Category not found');
+    }
+    if (userRole !== UserRole.ADMIN && category.created_by_id !== userId) {
+      this.logger.warn(
+        `User ${userId} trying to delete category ${id} created by ${category.created_by_id}`,
+        {
+          context: 'CategoryService',
+        },
+      );
+      throw new ForbiddenException(
+        'You can only delete categories you created',
+      );
     }
     await this.prisma.category.delete({ where: { id } });
     this.logger.info(`Category deleted: ${id}`, { context: 'CategoryService' });

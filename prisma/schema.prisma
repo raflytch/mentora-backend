@@ -61,6 +61,7 @@ model User {
   payments            Payment[]
   quiz_attempts       QuizAttempt[]
   notifications       Notification[]
+  created_categories  Category[]
 
   @@map("users")
 }
@@ -109,12 +110,14 @@ model StudentProfile {
 }
 
 model Category {
-  id          String     @id @default(cuid())
-  name        String     @unique
-  description String?
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
-  materials   Material[]
+  id            String     @id @default(cuid())
+  name          String     @unique
+  description   String?
+  created_by_id String
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+  materials     Material[]
+  created_by    User       @relation(fields: [created_by_id], references: [id])
 
   @@map("categories")
 }
