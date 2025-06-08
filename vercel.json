@@ -5,6 +5,7 @@
       "src": "src/main.ts",
       "use": "@vercel/node",
       "config": {
+        "maxLambdaSize": "50mb",
         "includeFiles": [
           "dist/**",
           "node_modules/**",
@@ -18,22 +19,11 @@
     {
       "src": "/(.*)",
       "dest": "src/main.ts",
-      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
-        "Access-Control-Max-Age": "86400"
-      }
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
     }
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "src/main.ts": {
-      "maxDuration": 30
-    }
   },
   "headers": [
     {
