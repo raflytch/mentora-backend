@@ -9,6 +9,7 @@ import { PrismaModule } from './core/prisma/prisma.module';
 import { CloudinaryModule } from './core/cloudinary/cloudinary.module';
 import { MailModule } from './core/mail/mail.module';
 import { UserModule } from './modules/user/user.module';
+import { CategoryModule } from './modules/category/category.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UserModule } from './modules/user/user.module';
     CloudinaryModule,
     MailModule,
     UserModule,
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

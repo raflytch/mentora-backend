@@ -1,0 +1,78 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Inject,
+} from '@nestjs/common';
+import { CategoryService } from './category.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { JwtAuthGuard } from '../../core/auth/guards/jwt-auth.guard';
+import { Roles } from '../../core/decorators/roles.decorator';
+import { RolesGuard } from '../../core/guards/roles.guard';
+import { UserRole } from '@prisma/client';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
+
+@Controller('api/v1/category')
+export class CategoryController {
+  constructor(
+    private readonly categoryService: CategoryService,
+    @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
+  ) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getAllCategories(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    this.logger.info('Get all categories', { context: 'CategoryController' });
+    return this.categoryService.getAllCategories({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 10,
+    });
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  async createCategory(@Body() dto: CreateCategoryDto) {
+    this.logger.info('Create category', { context: 'CategoryController' });
+    return this.categoryService.createCategory(dto);
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  async updateCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    this.logger.info(`Update category: ${id}`, {
+      context: 'CategoryController',
+    });
+    return this.categoryService.updateCategory(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.TEACHER)
+  async deleteCategory(@Param('id') id: string) {
+    this.logger.info(`Delete category: ${id}`, {
+      context: 'CategoryController',
+    });
+    return this.categoryService.deleteCategory(id);
+  }
+}
