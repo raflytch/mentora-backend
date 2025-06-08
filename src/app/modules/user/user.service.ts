@@ -36,13 +36,10 @@ export class UserService {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
     });
-
     if (existingUser) {
       throw new BadRequestException('Email already registered');
     }
-
     const hashedPassword = await bcrypt.hash(registerDto.password, 12);
-
     const user = await this.prisma.user.create({
       data: {
         email: registerDto.email,
@@ -52,7 +49,6 @@ export class UserService {
         phone: registerDto.phone,
       },
     });
-
     if (registerDto.role === UserRole.TEACHER) {
       await this.prisma.teacherProfile.create({
         data: { user_id: user.id },
@@ -62,10 +58,8 @@ export class UserService {
         data: { user_id: user.id },
       });
     }
-
     const otpCode = this.generateOtpCode();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
     await this.prisma.otpCode.create({
       data: {
         user_id: user.id,
@@ -73,17 +67,14 @@ export class UserService {
         expires_at: expiresAt,
       },
     });
-
     await this.mailService.sendOtpVerification(
       user.email,
       user.full_name,
       otpCode,
     );
-
     this.logger.info(`User registered: ${user.email}`, {
       context: 'UserService',
     });
-
     return {
       message:
         'Registration successful. Please check your email for OTP verification.',
@@ -99,11 +90,9 @@ export class UserService {
         student_profile: true,
       },
     });
-
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       user.password,
@@ -111,28 +100,22 @@ export class UserService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
     if (!user.is_email_verified) {
       throw new UnauthorizedException('Please verify your email first');
     }
-
     const payload = { email: user.email, sub: user.id, role: user.role };
     const access_token = this.jwtService.sign(payload);
-
     this.logger.info(`User logged in: ${user.email}`, {
       context: 'UserService',
     });
-
     return {
       access_token,
       user: this.formatUserResponse(user),
     };
   }
 
-  // Google OAuth callback handler
   async googleLoginCallback(googleUser: any) {
     const { email, full_name, profile_picture, google_id } = googleUser;
-
     let user = await this.prisma.user.findUnique({
       where: { email },
       include: {
@@ -140,9 +123,7 @@ export class UserService {
         student_profile: true,
       },
     });
-
     if (!user) {
-      // Create new user
       user = await this.prisma.user.create({
         data: {
           email,
@@ -158,12 +139,10 @@ export class UserService {
           student_profile: true,
         },
       });
-
       await this.prisma.studentProfile.create({
         data: { user_id: user.id },
       });
     } else if (!user.google_id) {
-      // Link existing account
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: {
@@ -178,30 +157,24 @@ export class UserService {
         },
       });
     }
-
     const payload = { email: user.email, sub: user.id, role: user.role };
     const access_token = this.jwtService.sign(payload);
-
     this.logger.info(`User logged in via Google: ${user.email}`, {
       context: 'UserService',
     });
-
     return {
       access_token,
       user: this.formatUserResponse(user),
     };
   }
 
-  // Verify OTP by email (tidak perlu JWT)
   async verifyOtp(email: string, verifyOtpDto: VerifyOtpDto) {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
-
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     const otpRecord = await this.prisma.otpCode.findFirst({
       where: {
         user_id: user.id,
@@ -212,16 +185,13 @@ export class UserService {
         },
       },
     });
-
     if (!otpRecord) {
       throw new BadRequestException('Invalid or expired OTP code');
     }
-
     await this.prisma.otpCode.update({
       where: { id: otpRecord.id },
       data: { is_used: true },
     });
-
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -229,11 +199,9 @@ export class UserService {
         verification_status: 'VERIFIED',
       },
     });
-
     this.logger.info(`Email verified for user: ${user.email}`, {
       context: 'UserService',
     });
-
     return { message: 'Email verified successfully' };
   }
 
@@ -241,23 +209,18 @@ export class UserService {
     const user = await this.prisma.user.findUnique({
       where: { email: resendOtpDto.email },
     });
-
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     if (user.is_email_verified) {
       throw new BadRequestException('Email is already verified');
     }
-
     await this.prisma.otpCode.updateMany({
       where: { user_id: user.id, is_used: false },
       data: { is_used: true },
     });
-
     const otpCode = this.generateOtpCode();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
     await this.prisma.otpCode.create({
       data: {
         user_id: user.id,
@@ -265,17 +228,14 @@ export class UserService {
         expires_at: expiresAt,
       },
     });
-
     await this.mailService.sendOtpVerification(
       user.email,
       user.full_name,
       otpCode,
     );
-
     this.logger.info(`OTP resent to: ${user.email}`, {
       context: 'UserService',
     });
-
     return { message: 'OTP sent successfully' };
   }
 
@@ -287,11 +247,9 @@ export class UserService {
         student_profile: true,
       },
     });
-
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     return this.formatUserResponse(user);
   }
 
@@ -307,13 +265,10 @@ export class UserService {
         student_profile: true,
       },
     });
-
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     let profilePictureUrl = user.profile_picture;
-
     if (profilePicture) {
       const uploadResult = await this.cloudinaryService.uploadFile(
         profilePicture,
@@ -321,7 +276,6 @@ export class UserService {
       );
       profilePictureUrl = uploadResult.secure_url;
     }
-
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -334,7 +288,6 @@ export class UserService {
         student_profile: true,
       },
     });
-
     if (user.role === UserRole.TEACHER && user.teacher_profile) {
       await this.prisma.teacherProfile.update({
         where: { user_id: userId },
@@ -345,7 +298,6 @@ export class UserService {
         },
       });
     }
-
     if (user.role === UserRole.STUDENT && user.student_profile) {
       await this.prisma.studentProfile.update({
         where: { user_id: userId },
@@ -356,7 +308,6 @@ export class UserService {
         },
       });
     }
-
     const finalUser = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -364,11 +315,9 @@ export class UserService {
         student_profile: true,
       },
     });
-
     this.logger.info(`User updated: ${updatedUser.email}`, {
       context: 'UserService',
     });
-
     return this.formatUserResponse(finalUser);
   }
 
@@ -376,18 +325,14 @@ export class UserService {
     const teacher = await this.prisma.user.findUnique({
       where: { id: teacherId, role: UserRole.TEACHER },
     });
-
     if (!teacher) {
       throw new NotFoundException('Teacher not found');
     }
-
     const materials = await this.prisma.material.findMany({
       where: { teacher_id: teacherId },
       select: { id: true },
     });
-
     const materialIds = materials.map((material) => material.id);
-
     const payments = await this.prisma.payment.findMany({
       where: {
         material_id: { in: materialIds },
@@ -407,9 +352,7 @@ export class UserService {
         },
       },
     });
-
     const studentsMap = new Map();
-
     payments.forEach((payment) => {
       const student = payment.user;
       if (!studentsMap.has(student.id)) {
@@ -419,7 +362,6 @@ export class UserService {
           total_spent: 0,
         });
       }
-
       const studentData = studentsMap.get(student.id);
       if (payment.material) {
         studentData.purchased_materials.push({
@@ -431,27 +373,52 @@ export class UserService {
         studentData.total_spent += payment.amount;
       }
     });
-
     return Array.from(studentsMap.values());
+  }
+
+  async getAllUsers(query: { page?: number; limit?: number; role?: UserRole }) {
+    const page = query.page && query.page > 0 ? query.page : 1;
+    const limit = query.limit && query.limit > 0 ? query.limit : 10;
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    if (query.role) {
+      where.role = query.role;
+    }
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+        include: {
+          teacher_profile: true,
+          student_profile: true,
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+    return {
+      data: users.map((u) => this.formatUserResponse(u)),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async requestDeleteAccount(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     await this.prisma.otpCode.updateMany({
       where: { user_id: userId, is_used: false },
       data: { is_used: true },
     });
-
     const otpCode = this.generateOtpCode();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
     await this.prisma.otpCode.create({
       data: {
         user_id: userId,
@@ -459,17 +426,14 @@ export class UserService {
         expires_at: expiresAt,
       },
     });
-
     await this.mailService.sendDeleteAccountOtp(
       user.email,
       user.full_name,
       otpCode,
     );
-
     this.logger.info(`Delete account OTP sent to: ${user.email}`, {
       context: 'UserService',
     });
-
     return { message: 'Delete account OTP sent to your email' };
   }
 
@@ -477,11 +441,9 @@ export class UserService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
-
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
     const otpRecord = await this.prisma.otpCode.findFirst({
       where: {
         user_id: userId,
@@ -492,24 +454,19 @@ export class UserService {
         },
       },
     });
-
     if (!otpRecord) {
       throw new BadRequestException('Invalid or expired OTP code');
     }
-
     await this.prisma.otpCode.update({
       where: { id: otpRecord.id },
       data: { is_used: true },
     });
-
     await this.prisma.user.delete({
       where: { id: userId },
     });
-
     this.logger.info(`User account deleted: ${user.email}`, {
       context: 'UserService',
     });
-
     return { message: 'Account deleted successfully' };
   }
 

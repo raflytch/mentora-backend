@@ -8,7 +8,6 @@ import {
   UseGuards,
   Request,
   UploadedFile,
-  Param,
   Inject,
   Res,
   Query,
@@ -30,6 +29,9 @@ import { DeleteAccountDto } from './dto/delete-account.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { ConfigService } from '../../core/config/config.service';
+import { UserRole } from '@prisma/client';
+import { Roles } from '../../core/decorators/roles.decorator';
+import { RolesGuard } from '../../core/guards/roles.guard';
 
 @Controller('api/v1/user')
 export class UserController {
@@ -53,28 +55,21 @@ export class UserController {
     return this.userService.login(loginDto);
   }
 
-  // Google OAuth redirect - GET endpoint
   @Get('auth/google')
   @UseGuards(GoogleOAuthGuard)
-  async googleAuth(@Req() req) {
-    // Redirects to Google
-  }
+  async googleAuth(@Req() req) {}
 
-  // Google OAuth callback
   @Get('auth/google/callback')
   @UseGuards(GoogleOAuthGuard)
   async googleAuthRedirect(@Req() req, @Res() res: Response) {
     this.logger.info('Google OAuth callback', 'UserController');
     const result = await this.userService.googleLoginCallback(req.user);
-
-    // Redirect to frontend with token
     const frontendUrl = this.configService.frontendUrl;
     return res.redirect(
       `${frontendUrl}/auth/callback?token=${result.access_token}`,
     );
   }
 
-  // Verify OTP - NO JWT required (user belum verified)
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   async verifyOtp(
@@ -120,9 +115,27 @@ export class UserController {
   @Get('students')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.TEACHER)
   async getStudentsByTeacher(@Request() req) {
     this.logger.info('Get students by teacher', 'UserController');
     return this.userService.getStudentsByTeacher(req.user.id);
+  }
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async getAllUsers(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('role') role?: UserRole,
+  ) {
+    this.logger.info('Get all users', 'UserController');
+    return this.userService.getAllUsers({
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 10,
+      role: role as UserRole,
+    });
   }
 
   @Post('delete-account/request')
