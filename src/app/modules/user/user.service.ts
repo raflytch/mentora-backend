@@ -19,7 +19,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
-import { UserRole } from '../../../../generated/prisma';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class UserService {

@@ -58,4 +58,12 @@ export class ConfigService {
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'
     );
   }
+
+  get adminEmail(): string {
+    return this.configService.get<string>('ADMIN_EMAIL') || '';
+  }
+
+  get adminPassword(): string {
+    return this.configService.get<string>('ADMIN_PASSWORD') || '';
+  }
 }
