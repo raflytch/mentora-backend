@@ -20,7 +20,7 @@ export class AppController {
   ) {}
 
   @Get()
-  getWelcome(): WelcomeResponse {
+  getWelcome(): Promise<WelcomeResponse> {
     this.logger.log('GET / - Welcome endpoint called', 'AppController');
     return this.appService.getWelcome();
   }

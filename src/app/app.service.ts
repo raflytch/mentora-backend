@@ -17,7 +17,7 @@ export class AppService {
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: Logger,
   ) {}
 
-  getWelcome(): WelcomeResponse {
+  async getWelcome(): Promise<WelcomeResponse> {
     this.logger.log('Welcome endpoint accessed', 'AppService');
 
     return {

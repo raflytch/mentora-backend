@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app/app.module';
 import { ConfigService } from './app/core/config/config.service';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { ResponseInterceptor } from './app/core/interceptors/response.interceptor';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -21,6 +22,8 @@ async function bootstrap(): Promise<void> {
       transform: true,
     }),
   );
+
+  app.useGlobalInterceptors(new ResponseInterceptor());
 
   app.enableCors();
 

@@ -9,7 +9,13 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { UserRole } from '@prisma/client';
+import { UserRole, Category } from '@prisma/client';
+import { PaginatedData } from '../../core/interfaces/response.interface';
+import {
+  CategoryWithRelations,
+  DeleteCategoryResponse,
+  CategoryQuery,
+} from './types/category.types';
 
 @Injectable()
 export class CategoryService {
@@ -18,7 +24,9 @@ export class CategoryService {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
-  async getAllCategories(query: { page?: number; limit?: number }) {
+  async getAllCategories(
+    query: CategoryQuery,
+  ): Promise<PaginatedData<CategoryWithRelations>> {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const skip = (page - 1) * limit;
@@ -50,7 +58,10 @@ export class CategoryService {
     };
   }
 
-  async createCategory(dto: CreateCategoryDto, userId: string) {
+  async createCategory(
+    dto: CreateCategoryDto,
+    userId: string,
+  ): Promise<Category> {
     const category = await this.prisma.category.create({
       data: {
         name: dto.name,
@@ -69,7 +80,7 @@ export class CategoryService {
     dto: UpdateCategoryDto,
     userId: string,
     userRole: UserRole,
-  ) {
+  ): Promise<Category> {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: {
@@ -104,7 +115,11 @@ export class CategoryService {
     return updated;
   }
 
-  async deleteCategory(id: string, userId: string, userRole: UserRole) {
+  async deleteCategory(
+    id: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<DeleteCategoryResponse> {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: {
