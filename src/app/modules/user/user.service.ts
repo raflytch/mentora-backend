@@ -19,7 +19,18 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
-import { UserRole } from '@prisma/client';
+import { UserRole, User, Prisma } from '@prisma/client';
+import {
+  UserWithProfiles,
+  AuthResponse,
+  RegisterResponse,
+  MessageResponse,
+  GoogleUserData,
+  FormattedUserResponse,
+  StudentWithPurchases,
+  UserQuery,
+  UsersResponse,
+} from '../../core/interfaces/user/user.interface';
 
 @Injectable()
 export class UserService {
@@ -32,7 +43,7 @@ export class UserService {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
-  async register(registerDto: RegisterDto) {
+  async register(registerDto: RegisterDto): Promise<RegisterResponse> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
     });
@@ -82,7 +93,7 @@ export class UserService {
     };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto): Promise<AuthResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
       include: {
@@ -114,7 +125,7 @@ export class UserService {
     };
   }
 
-  async googleLoginCallback(googleUser: any) {
+  async googleLoginCallback(googleUser: GoogleUserData): Promise<AuthResponse> {
     const { email, full_name, profile_picture, google_id } = googleUser;
     let user = await this.prisma.user.findUnique({
       where: { email },
@@ -168,7 +179,10 @@ export class UserService {
     };
   }
 
-  async verifyOtp(email: string, verifyOtpDto: VerifyOtpDto) {
+  async verifyOtp(
+    email: string,
+    verifyOtpDto: VerifyOtpDto,
+  ): Promise<MessageResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -205,7 +219,7 @@ export class UserService {
     return { message: 'Email verified successfully' };
   }
 
-  async resendOtp(resendOtpDto: ResendOtpDto) {
+  async resendOtp(resendOtpDto: ResendOtpDto): Promise<MessageResponse> {
     const user = await this.prisma.user.findUnique({
       where: { email: resendOtpDto.email },
     });
@@ -239,7 +253,7 @@ export class UserService {
     return { message: 'OTP sent successfully' };
   }
 
-  async getMe(userId: string) {
+  async getMe(userId: string): Promise<FormattedUserResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -257,7 +271,7 @@ export class UserService {
     userId: string,
     updateUserDto: UpdateUserDto,
     profilePicture?: Express.Multer.File,
-  ) {
+  ): Promise<FormattedUserResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -318,10 +332,12 @@ export class UserService {
     this.logger.info(`User updated: ${updatedUser.email}`, {
       context: 'UserService',
     });
-    return this.formatUserResponse(finalUser);
+    return this.formatUserResponse(finalUser!);
   }
 
-  async getStudentsByTeacher(teacherId: string) {
+  async getStudentsByTeacher(
+    teacherId: string,
+  ): Promise<StudentWithPurchases[]> {
     const teacher = await this.prisma.user.findUnique({
       where: { id: teacherId, role: UserRole.TEACHER },
     });
@@ -352,7 +368,7 @@ export class UserService {
         },
       },
     });
-    const studentsMap = new Map();
+    const studentsMap = new Map<string, StudentWithPurchases>();
     payments.forEach((payment) => {
       const student = payment.user;
       if (!studentsMap.has(student.id)) {
@@ -362,10 +378,10 @@ export class UserService {
           total_spent: 0,
         });
       }
-      const studentData = studentsMap.get(student.id);
+      const studentData = studentsMap.get(student.id)!;
       if (payment.material) {
         studentData.purchased_materials.push({
-          id: payment.material_id,
+          id: payment.material_id || '',
           title: payment.material.title,
           price: payment.material.price,
           purchased_at: payment.paid_at,
@@ -376,11 +392,11 @@ export class UserService {
     return Array.from(studentsMap.values());
   }
 
-  async getAllUsers(query: { page?: number; limit?: number; role?: UserRole }) {
+  async getAllUsers(query: UserQuery): Promise<UsersResponse> {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: Prisma.UserWhereInput = {};
     if (query.role) {
       where.role = query.role;
     }
@@ -406,7 +422,7 @@ export class UserService {
     };
   }
 
-  async requestDeleteAccount(userId: string) {
+  async requestDeleteAccount(userId: string): Promise<MessageResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -437,7 +453,10 @@ export class UserService {
     return { message: 'Delete account OTP sent to your email' };
   }
 
-  async deleteAccount(userId: string, deleteAccountDto: DeleteAccountDto) {
+  async deleteAccount(
+    userId: string,
+    deleteAccountDto: DeleteAccountDto,
+  ): Promise<MessageResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -474,7 +493,7 @@ export class UserService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  private formatUserResponse(user: any) {
+  private formatUserResponse(user: UserWithProfiles): FormattedUserResponse {
     return {
       id: user.id,
       email: user.email,

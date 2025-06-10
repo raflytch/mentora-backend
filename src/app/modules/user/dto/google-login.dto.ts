@@ -1,6 +1,16 @@
-import { IsString } from 'class-validator';
+import { IsString, IsEmail, IsOptional } from 'class-validator';
 
 export class GoogleLoginDto {
+  @IsEmail()
+  email: string;
+
   @IsString()
-  token: string;
+  full_name: string;
+
+  @IsOptional()
+  @IsString()
+  profile_picture?: string;
+
+  @IsString()
+  google_id: string;
 }

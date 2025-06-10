@@ -10,8 +10,10 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { UserRole, Category } from '@prisma/client';
-import { PaginatedData } from '../../core/interfaces/response.interface';
-import { CategoryWithRelations, CategoryQuery } from './types/category.types';
+import {
+  CategoryWithRelations,
+  CategoryQuery,
+} from '../../core/interfaces/category/category.interface';
 
 @Injectable()
 export class CategoryService {

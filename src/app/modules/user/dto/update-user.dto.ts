@@ -15,10 +15,6 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  experience?: string;
-
-  @IsOptional()
-  @IsString()
   education?: string;
 
   @IsOptional()

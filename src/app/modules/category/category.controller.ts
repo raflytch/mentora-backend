@@ -25,7 +25,7 @@ import { Logger } from 'winston';
 import {
   CategoryWithRelations,
   AuthenticatedRequest,
-} from './types/category.types';
+} from '../../core/interfaces/category/category.interface';
 
 @Controller('api/v1/category')
 export class CategoryController {
