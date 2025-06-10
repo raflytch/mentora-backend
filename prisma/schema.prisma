@@ -87,7 +87,6 @@ model TeacherProfile {
   subjects      String[]
   rating        Float    @default(0)
   total_reviews Int      @default(0)
-  total_courses Int      @default(0)
   is_active     Boolean  @default(true)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
