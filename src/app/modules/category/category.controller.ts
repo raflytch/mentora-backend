@@ -26,6 +26,7 @@ import {
   CategoryWithRelations,
   AuthenticatedRequest,
 } from '../../core/interfaces/category/category.interface';
+import { ApiResponse } from '../../core/interfaces/response.interface';
 
 @Controller('api/v1/category')
 export class CategoryController {
@@ -39,7 +40,7 @@ export class CategoryController {
   async getAllCategories(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
-  ): Promise<CategoryWithRelations[]> {
+  ): Promise<ApiResponse<CategoryWithRelations[]>> {
     this.logger.info('Get all categories', { context: 'CategoryController' });
     return this.categoryService.getAllCategories({
       page: page ? Number(page) : 1,
@@ -54,7 +55,7 @@ export class CategoryController {
   async createCategory(
     @Body() dto: CreateCategoryDto,
     @Request() req: AuthenticatedRequest,
-  ): Promise<Category> {
+  ): Promise<ApiResponse<Category>> {
     this.logger.info('Create category', { context: 'CategoryController' });
     return this.categoryService.createCategory(dto, req.user.id);
   }
@@ -67,7 +68,7 @@ export class CategoryController {
     @Param('id') id: string,
     @Body() dto: UpdateCategoryDto,
     @Request() req: AuthenticatedRequest,
-  ): Promise<Category> {
+  ): Promise<ApiResponse<Category>> {
     this.logger.info(`Update category: ${id}`, {
       context: 'CategoryController',
     });
@@ -86,7 +87,7 @@ export class CategoryController {
   async deleteCategory(
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
-  ): Promise<null> {
+  ): Promise<ApiResponse<null>> {
     this.logger.info(`Delete category: ${id}`, {
       context: 'CategoryController',
     });

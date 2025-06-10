@@ -5,20 +5,6 @@ export interface UserWithProfiles extends User {
   student_profile?: StudentProfile | null;
 }
 
-export interface AuthResponse {
-  access_token: string;
-  user: FormattedUserResponse;
-}
-
-export interface RegisterResponse {
-  message: string;
-  user_id: string;
-}
-
-export interface MessageResponse {
-  message: string;
-}
-
 export interface GoogleUserData {
   email: string;
   full_name: string;
@@ -60,7 +46,7 @@ export interface UserQuery {
 }
 
 export interface UsersResponse {
-  data: FormattedUserResponse[];
+  users: FormattedUserResponse[];
   total: number;
   page: number;
   limit: number;

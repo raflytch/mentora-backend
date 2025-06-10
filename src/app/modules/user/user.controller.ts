@@ -33,15 +33,13 @@ import { UserRole } from '@prisma/client';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import {
-  AuthResponse,
-  RegisterResponse,
-  MessageResponse,
   FormattedUserResponse,
   StudentWithPurchases,
   UsersResponse,
   AuthenticatedRequest,
   GoogleAuthenticatedRequest,
 } from '../../core/interfaces/user/user.interface';
+import { ApiResponse } from '../../core/interfaces/response.interface';
 
 @Controller('api/v1/user')
 export class UserController {
@@ -53,14 +51,20 @@ export class UserController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() registerDto: RegisterDto): Promise<RegisterResponse> {
+  async register(
+    @Body() registerDto: RegisterDto,
+  ): Promise<ApiResponse<{ user_id: string }>> {
     this.logger.info('User registration attempt', 'UserController');
     return this.userService.register(registerDto);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
+  async login(
+    @Body() loginDto: LoginDto,
+  ): Promise<
+    ApiResponse<{ access_token: string; user: FormattedUserResponse }>
+  > {
     this.logger.info('User login attempt', 'UserController');
     return this.userService.login(loginDto);
   }
@@ -78,7 +82,9 @@ export class UserController {
     this.logger.info('Google OAuth callback', 'UserController');
     const result = await this.userService.googleLoginCallback(req.user);
     const frontendUrl = this.configService.frontendUrl;
-    res.redirect(`${frontendUrl}/auth/callback?token=${result.access_token}`);
+    res.redirect(
+      `${frontendUrl}/auth/callback?token=${result.data.access_token}`,
+    );
   }
 
   @Post('verify-otp')
@@ -86,7 +92,7 @@ export class UserController {
   async verifyOtp(
     @Body() verifyOtpDto: VerifyOtpDto,
     @Query('email') email: string,
-  ): Promise<MessageResponse> {
+  ): Promise<ApiResponse<null>> {
     this.logger.info('OTP verification attempt', 'UserController');
     return this.userService.verifyOtp(email, verifyOtpDto);
   }
@@ -95,7 +101,7 @@ export class UserController {
   @HttpCode(HttpStatus.OK)
   async resendOtp(
     @Body() resendOtpDto: ResendOtpDto,
-  ): Promise<MessageResponse> {
+  ): Promise<ApiResponse<null>> {
     this.logger.info('OTP resend request', 'UserController');
     return this.userService.resendOtp(resendOtpDto);
   }
@@ -105,7 +111,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   async getMe(
     @Request() req: AuthenticatedRequest,
-  ): Promise<FormattedUserResponse> {
+  ): Promise<ApiResponse<FormattedUserResponse>> {
     this.logger.info('Get current user data', 'UserController');
     return this.userService.getMe(req.user.id);
   }
@@ -118,7 +124,7 @@ export class UserController {
     @Request() req: AuthenticatedRequest,
     @Body() updateUserDto: UpdateUserDto,
     @UploadedFile() profilePicture?: Express.Multer.File,
-  ): Promise<FormattedUserResponse> {
+  ): Promise<ApiResponse<FormattedUserResponse>> {
     this.logger.info('Update user profile', 'UserController');
     return this.userService.updateUser(
       req.user.id,
@@ -133,7 +139,7 @@ export class UserController {
   @Roles(UserRole.TEACHER)
   async getStudentsByTeacher(
     @Request() req: AuthenticatedRequest,
-  ): Promise<StudentWithPurchases[]> {
+  ): Promise<ApiResponse<StudentWithPurchases[]>> {
     this.logger.info('Get students by teacher', 'UserController');
     return this.userService.getStudentsByTeacher(req.user.id);
   }
@@ -146,7 +152,7 @@ export class UserController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('role') role?: UserRole,
-  ): Promise<UsersResponse> {
+  ): Promise<ApiResponse<UsersResponse>> {
     this.logger.info('Get all users', 'UserController');
     return this.userService.getAllUsers({
       page: page ? Number(page) : 1,
@@ -160,7 +166,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   async requestDeleteAccount(
     @Request() req: AuthenticatedRequest,
-  ): Promise<MessageResponse> {
+  ): Promise<ApiResponse<null>> {
     this.logger.info('Request account deletion', 'UserController');
     return this.userService.requestDeleteAccount(req.user.id);
   }
@@ -171,7 +177,7 @@ export class UserController {
   async deleteAccount(
     @Request() req: AuthenticatedRequest,
     @Body() deleteAccountDto: DeleteAccountDto,
-  ): Promise<MessageResponse> {
+  ): Promise<ApiResponse<null>> {
     this.logger.info('Delete user account', 'UserController');
     return this.userService.deleteAccount(req.user.id, deleteAccountDto);
   }

@@ -14,6 +14,7 @@ import {
   CategoryWithRelations,
   CategoryQuery,
 } from '../../core/interfaces/category/category.interface';
+import { ApiResponse } from '../../core/interfaces/response.interface';
 
 @Injectable()
 export class CategoryService {
@@ -24,10 +25,11 @@ export class CategoryService {
 
   async getAllCategories(
     query: CategoryQuery,
-  ): Promise<CategoryWithRelations[]> {
+  ): Promise<ApiResponse<CategoryWithRelations[]>> {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const skip = (page - 1) * limit;
+
     const categories = await this.prisma.category.findMany({
       skip,
       take: limit,
@@ -43,14 +45,20 @@ export class CategoryService {
         },
       },
     });
+
     this.logger.info('Get all categories', { context: 'CategoryService' });
-    return categories;
+
+    return {
+      status: 'success',
+      message: 'Categories retrieved successfully',
+      data: categories,
+    };
   }
 
   async createCategory(
     dto: CreateCategoryDto,
     userId: string,
-  ): Promise<Category> {
+  ): Promise<ApiResponse<Category>> {
     const category = await this.prisma.category.create({
       data: {
         name: dto.name,
@@ -58,10 +66,16 @@ export class CategoryService {
         created_by_id: userId,
       },
     });
+
     this.logger.info(`Category created: ${category.name}`, {
       context: 'CategoryService',
     });
-    return category;
+
+    return {
+      status: 'success',
+      message: `Category "${category.name}" created successfully`,
+      data: category,
+    };
   }
 
   async updateCategory(
@@ -69,19 +83,21 @@ export class CategoryService {
     dto: UpdateCategoryDto,
     userId: string,
     userRole: UserRole,
-  ): Promise<Category> {
+  ): Promise<ApiResponse<Category>> {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: {
         created_by: true,
       },
     });
+
     if (!category) {
       this.logger.warn(`Category not found: ${id}`, {
         context: 'CategoryService',
       });
       throw new NotFoundException('Category not found');
     }
+
     if (userRole !== UserRole.ADMIN && category.created_by_id !== userId) {
       this.logger.warn(
         `User ${userId} trying to update category ${id} created by ${category.created_by_id}`,
@@ -93,6 +109,7 @@ export class CategoryService {
         'You can only update categories you created',
       );
     }
+
     const updated = await this.prisma.category.update({
       where: { id },
       data: {
@@ -100,27 +117,35 @@ export class CategoryService {
         description: dto.description,
       },
     });
+
     this.logger.info(`Category updated: ${id}`, { context: 'CategoryService' });
-    return updated;
+
+    return {
+      status: 'success',
+      message: `Category "${updated.name}" updated successfully`,
+      data: updated,
+    };
   }
 
   async deleteCategory(
     id: string,
     userId: string,
     userRole: UserRole,
-  ): Promise<null> {
+  ): Promise<ApiResponse<null>> {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: {
         created_by: true,
       },
     });
+
     if (!category) {
       this.logger.warn(`Category not found: ${id}`, {
         context: 'CategoryService',
       });
       throw new NotFoundException('Category not found');
     }
+
     if (userRole !== UserRole.ADMIN && category.created_by_id !== userId) {
       this.logger.warn(
         `User ${userId} trying to delete category ${id} created by ${category.created_by_id}`,
@@ -132,8 +157,14 @@ export class CategoryService {
         'You can only delete categories you created',
       );
     }
+
     await this.prisma.category.delete({ where: { id } });
     this.logger.info(`Category deleted: ${id}`, { context: 'CategoryService' });
-    return null;
+
+    return {
+      status: 'success',
+      message: `Category "${category.name}" deleted successfully`,
+      data: null,
+    };
   }
 }

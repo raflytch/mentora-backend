@@ -22,15 +22,13 @@ import { DeleteAccountDto } from './dto/delete-account.dto';
 import { UserRole, User, Prisma } from '@prisma/client';
 import {
   UserWithProfiles,
-  AuthResponse,
-  RegisterResponse,
-  MessageResponse,
   GoogleUserData,
   FormattedUserResponse,
   StudentWithPurchases,
   UserQuery,
   UsersResponse,
 } from '../../core/interfaces/user/user.interface';
+import { ApiResponse } from '../../core/interfaces/response.interface';
 
 @Injectable()
 export class UserService {
@@ -43,7 +41,9 @@ export class UserService {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<RegisterResponse> {
+  async register(
+    registerDto: RegisterDto,
+  ): Promise<ApiResponse<{ user_id: string }>> {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: registerDto.email },
     });
@@ -87,13 +87,18 @@ export class UserService {
       context: 'UserService',
     });
     return {
+      status: 'success',
       message:
         'Registration successful. Please check your email for OTP verification.',
-      user_id: user.id,
+      data: { user_id: user.id },
     };
   }
 
-  async login(loginDto: LoginDto): Promise<AuthResponse> {
+  async login(
+    loginDto: LoginDto,
+  ): Promise<
+    ApiResponse<{ access_token: string; user: FormattedUserResponse }>
+  > {
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email },
       include: {
@@ -120,12 +125,20 @@ export class UserService {
       context: 'UserService',
     });
     return {
-      access_token,
-      user: this.formatUserResponse(user),
+      status: 'success',
+      message: 'Login successful',
+      data: {
+        access_token,
+        user: this.formatUserResponse(user),
+      },
     };
   }
 
-  async googleLoginCallback(googleUser: GoogleUserData): Promise<AuthResponse> {
+  async googleLoginCallback(
+    googleUser: GoogleUserData,
+  ): Promise<
+    ApiResponse<{ access_token: string; user: FormattedUserResponse }>
+  > {
     const { email, full_name, profile_picture, google_id } = googleUser;
     let user = await this.prisma.user.findUnique({
       where: { email },
@@ -174,15 +187,19 @@ export class UserService {
       context: 'UserService',
     });
     return {
-      access_token,
-      user: this.formatUserResponse(user),
+      status: 'success',
+      message: 'Google login successful',
+      data: {
+        access_token,
+        user: this.formatUserResponse(user),
+      },
     };
   }
 
   async verifyOtp(
     email: string,
     verifyOtpDto: VerifyOtpDto,
-  ): Promise<MessageResponse> {
+  ): Promise<ApiResponse<null>> {
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
@@ -216,10 +233,14 @@ export class UserService {
     this.logger.info(`Email verified for user: ${user.email}`, {
       context: 'UserService',
     });
-    return { message: 'Email verified successfully' };
+    return {
+      status: 'success',
+      message: 'Email verified successfully',
+      data: null,
+    };
   }
 
-  async resendOtp(resendOtpDto: ResendOtpDto): Promise<MessageResponse> {
+  async resendOtp(resendOtpDto: ResendOtpDto): Promise<ApiResponse<null>> {
     const user = await this.prisma.user.findUnique({
       where: { email: resendOtpDto.email },
     });
@@ -250,10 +271,14 @@ export class UserService {
     this.logger.info(`OTP resent to: ${user.email}`, {
       context: 'UserService',
     });
-    return { message: 'OTP sent successfully' };
+    return {
+      status: 'success',
+      message: 'OTP sent successfully',
+      data: null,
+    };
   }
 
-  async getMe(userId: string): Promise<FormattedUserResponse> {
+  async getMe(userId: string): Promise<ApiResponse<FormattedUserResponse>> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -264,14 +289,18 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return this.formatUserResponse(user);
+    return {
+      status: 'success',
+      message: 'User data retrieved successfully',
+      data: this.formatUserResponse(user),
+    };
   }
 
   async updateUser(
     userId: string,
     updateUserDto: UpdateUserDto,
     profilePicture?: Express.Multer.File,
-  ): Promise<FormattedUserResponse> {
+  ): Promise<ApiResponse<FormattedUserResponse>> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -332,12 +361,16 @@ export class UserService {
     this.logger.info(`User updated: ${updatedUser.email}`, {
       context: 'UserService',
     });
-    return this.formatUserResponse(finalUser!);
+    return {
+      status: 'success',
+      message: 'Profile updated successfully',
+      data: this.formatUserResponse(finalUser!),
+    };
   }
 
   async getStudentsByTeacher(
     teacherId: string,
-  ): Promise<StudentWithPurchases[]> {
+  ): Promise<ApiResponse<StudentWithPurchases[]>> {
     const teacher = await this.prisma.user.findUnique({
       where: { id: teacherId, role: UserRole.TEACHER },
     });
@@ -389,10 +422,14 @@ export class UserService {
         studentData.total_spent += payment.amount;
       }
     });
-    return Array.from(studentsMap.values());
+    return {
+      status: 'success',
+      message: 'Students retrieved successfully',
+      data: Array.from(studentsMap.values()),
+    };
   }
 
-  async getAllUsers(query: UserQuery): Promise<UsersResponse> {
+  async getAllUsers(query: UserQuery): Promise<ApiResponse<UsersResponse>> {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const skip = (page - 1) * limit;
@@ -414,15 +451,19 @@ export class UserService {
       this.prisma.user.count({ where }),
     ]);
     return {
-      data: users.map((u) => this.formatUserResponse(u)),
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      status: 'success',
+      message: 'Users retrieved successfully',
+      data: {
+        users: users.map((user) => this.formatUserResponse(user)),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  async requestDeleteAccount(userId: string): Promise<MessageResponse> {
+  async requestDeleteAccount(userId: string): Promise<ApiResponse<null>> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -450,13 +491,17 @@ export class UserService {
     this.logger.info(`Delete account OTP sent to: ${user.email}`, {
       context: 'UserService',
     });
-    return { message: 'Delete account OTP sent to your email' };
+    return {
+      status: 'success',
+      message: 'Delete account OTP sent to your email',
+      data: null,
+    };
   }
 
   async deleteAccount(
     userId: string,
     deleteAccountDto: DeleteAccountDto,
-  ): Promise<MessageResponse> {
+  ): Promise<ApiResponse<null>> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -486,7 +531,11 @@ export class UserService {
     this.logger.info(`User account deleted: ${user.email}`, {
       context: 'UserService',
     });
-    return { message: 'Account deleted successfully' };
+    return {
+      status: 'success',
+      message: 'Account deleted successfully',
+      data: null,
+    };
   }
 
   private generateOtpCode(): string {
