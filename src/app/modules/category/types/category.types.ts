@@ -9,10 +9,6 @@ export interface CategoryWithRelations extends Category {
   };
 }
 
-export interface DeleteCategoryResponse {
-  message: string;
-}
-
 export interface AuthenticatedRequest extends Request {
   user: {
     id: string;

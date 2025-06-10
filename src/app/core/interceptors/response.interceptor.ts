@@ -16,12 +16,29 @@ export class ResponseInterceptor<T>
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<ApiResponse<T>> {
+    const request = context.switchToHttp().getRequest();
+    const method = request.method;
+
     return next.handle().pipe(
-      map((data: T) => ({
-        status: 'success',
-        message: 'Operation completed successfully',
-        data: data,
-      })),
+      map((data: T) => {
+        let message = 'Operation completed successfully';
+
+        if (method === 'DELETE') {
+          message = 'Data deleted successfully';
+        } else if (method === 'POST') {
+          message = 'Data created successfully';
+        } else if (method === 'PATCH' || method === 'PUT') {
+          message = 'Data updated successfully';
+        } else if (method === 'GET') {
+          message = 'Data retrieved successfully';
+        }
+
+        return {
+          status: 'success',
+          message,
+          data: data,
+        };
+      }),
     );
   }
 }

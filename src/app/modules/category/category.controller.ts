@@ -22,10 +22,8 @@ import { RolesGuard } from '../../core/guards/roles.guard';
 import { UserRole, Category } from '@prisma/client';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { PaginatedData } from '../../core/interfaces/response.interface';
 import {
   CategoryWithRelations,
-  DeleteCategoryResponse,
   AuthenticatedRequest,
 } from './types/category.types';
 
@@ -41,7 +39,7 @@ export class CategoryController {
   async getAllCategories(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
-  ): Promise<PaginatedData<CategoryWithRelations>> {
+  ): Promise<CategoryWithRelations[]> {
     this.logger.info('Get all categories', { context: 'CategoryController' });
     return this.categoryService.getAllCategories({
       page: page ? Number(page) : 1,
@@ -88,7 +86,7 @@ export class CategoryController {
   async deleteCategory(
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
-  ): Promise<DeleteCategoryResponse> {
+  ): Promise<null> {
     this.logger.info(`Delete category: ${id}`, {
       context: 'CategoryController',
     });

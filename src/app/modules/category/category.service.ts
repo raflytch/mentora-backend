@@ -11,11 +11,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { UserRole, Category } from '@prisma/client';
 import { PaginatedData } from '../../core/interfaces/response.interface';
-import {
-  CategoryWithRelations,
-  DeleteCategoryResponse,
-  CategoryQuery,
-} from './types/category.types';
+import { CategoryWithRelations, CategoryQuery } from './types/category.types';
 
 @Injectable()
 export class CategoryService {
@@ -26,36 +22,27 @@ export class CategoryService {
 
   async getAllCategories(
     query: CategoryQuery,
-  ): Promise<PaginatedData<CategoryWithRelations>> {
+  ): Promise<CategoryWithRelations[]> {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const skip = (page - 1) * limit;
-    const [categories, total] = await Promise.all([
-      this.prisma.category.findMany({
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-        include: {
-          materials: true,
-          created_by: {
-            select: {
-              id: true,
-              full_name: true,
-              role: true,
-            },
+    const categories = await this.prisma.category.findMany({
+      skip,
+      take: limit,
+      orderBy: { created_at: 'desc' },
+      include: {
+        materials: true,
+        created_by: {
+          select: {
+            id: true,
+            full_name: true,
+            role: true,
           },
         },
-      }),
-      this.prisma.category.count(),
-    ]);
+      },
+    });
     this.logger.info('Get all categories', { context: 'CategoryService' });
-    return {
-      data: categories,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
+    return categories;
   }
 
   async createCategory(
@@ -119,7 +106,7 @@ export class CategoryService {
     id: string,
     userId: string,
     userRole: UserRole,
-  ): Promise<DeleteCategoryResponse> {
+  ): Promise<null> {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: {
@@ -145,6 +132,6 @@ export class CategoryService {
     }
     await this.prisma.category.delete({ where: { id } });
     this.logger.info(`Category deleted: ${id}`, { context: 'CategoryService' });
-    return { message: 'Category deleted successfully' };
+    return null;
   }
 }
